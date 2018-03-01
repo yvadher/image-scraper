@@ -1,18 +1,23 @@
 //TO-DO :  Make it for multi pages so that we can download more thatn 49 pages 
 //      :  Make it more modular so easier to understand 
-//      : 
 
+//Import modules 
 const request = require('request');
 const cheerio = require('cheerio');
 const fs = require('fs');
+const nconf = require('nconf');
 var phantom = require('phantom');
 var Q = require('q');
-
-const services = require('./services/downloadImg');
 var $ = cheerio;
 
 
-downloadImages(['cat', 'dog']);
+var config = require('./config');
+
+//Import services
+const services = require('./services/downloadImg');
+
+downloadImages(nconf.get('list'));
+
 var _ph, _page, _outObj;
 
 function downloadImages(images) {
@@ -20,6 +25,7 @@ function downloadImages(images) {
         var data = [];
         let url = "https://duckduckgo.com/?q="+ query +"&t=hf&iax=images&ia=images";
 
+        //Phamtom create page and wait till page loaded | checkout PhamtopJs for details
         phantom.create().then(ph => {
             _ph = ph;
             return _ph.createPage();
@@ -32,21 +38,21 @@ function downloadImages(images) {
         }).then(() => {
             return _page.property('content');
         }).then(body => {
+
             //Start scrapping ------------------------------------------------
-            let filePath = "./"+ query + "/";
             var $ = cheerio.load(body);
             $('img.tile--img__img').each(function(i, elm) {
                 let imgUrl = $(this).attr("src");
                 data[i] = imgUrl;
                 console.log("Got ... "+ i);
-
             });
             //Scrapping ends-------------------------------------------------
 
             //Save images --------------------------------------------------
-            var dir = './'+query;
+            let filePath = "./res/"+ query + "/";
+            let dir = './res/'+query;
             if (!fs.existsSync(dir)){
-                fs.mkdirSync(dir);
+                fs.mkdirSync(dir);  
             }
 
             for (let i=0; i< data.length;i++){
@@ -55,8 +61,6 @@ function downloadImages(images) {
             }
             
         }).catch(e => console.log(e));
-        
-        
 
     });
 }
